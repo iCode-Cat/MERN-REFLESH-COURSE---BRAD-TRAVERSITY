@@ -51,10 +51,6 @@ check('skills', 'Skills is required')
 
     //Build profile object
     let profileFields = {}
-    const fieldHandler = (object, field, value) => {
-        if(value) object[field] = value
-    }
-    profileFields.user = req.user.id;
     profileFields = pick(req.body, [
         'handle',
         'company',
@@ -64,13 +60,14 @@ check('skills', 'Skills is required')
         'bio',
         'githubusername',
        ]);
-       profileFields.socia = pick(req.body, [
+       profileFields.social = pick(req.body, [
         'youtube',
         'twitter',
         'facebook',
         'linkedin',
         'instagram'
        ])
+       profileFields.user = req.user.id;
        if(skills){
         profileFields.skills = skills.split(',').map(skill => skill.trim())
     }
@@ -93,5 +90,34 @@ check('skills', 'Skills is required')
     }
 );
 
+//@route GET api/profile
+//@ desc Get all profiles
+//@access Public
+router.get('/', async(req,res) => {
+    try {
+        const profiles = await Profile.find().populate('user', ['name','avatar'])
+        res.json(profiles)
+    } catch (error) {
+        console.log(error);
+        res.status(500).send('Server Error')
+    }
+})
+
+//@route GET api/profile/user/id
+//@ desc Get user profile
+//@access Public
+router.get('/user/:user_id', async(req,res) => {
+    try {
+        const profile = await Profile.findOne({user:req.params.user_id}).populate('user', ['name','avatar'])
+        if(!profile) {
+            return res.status(400).send({msg:'User cannot find.'})
+        }
+        res.json(profile)
+    } catch (error) {
+        console.log(error.kind);
+        if(error.kind == 'ObjectId') return res.status(400).send({msg:'User cannot find.'})
+        res.status(500).send('Server Error')
+    }
+})
 
 module.exports = router;
